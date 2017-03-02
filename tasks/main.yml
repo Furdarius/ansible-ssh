@@ -1,0 +1,82 @@
+---
+- name: Ensure OpenSSH support is installed
+  apt:
+    name: '{{ item }}'
+    state: latest
+  with_items:
+    - openssh-server
+    - openssh-client
+
+- name: Install sshd config
+  template:
+    src: "sshd_config.j2"
+    dest: "/etc/ssh/sshd_config.tmp"
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Check if sshd_config is valid
+  command: /usr/sbin/sshd -T -f /etc/ssh/sshd_config.tmp
+  register: validation
+
+- name: Copy sshd_config file back
+  shell: cp -f "/etc/ssh/sshd_config.tmp" "/etc/ssh/sshd_config"
+  when: validation.rc == 0
+  notify: restart ssh
+
+# - name: Change port fact from {{ ansible_port }} to {{ ssh_port }}
+#  set_fact:
+#    ansible_port: "{{ ssh_port }}"
+#  when: (validation.rc == 0 and {{ ansible_port }} != {{ ssh_port }} )
+
+# - name: Fix rights for authorized_key directory
+#   file:
+#     path: "{{ keys_file | dirname }}"
+#     state: directory
+#     owner: root
+#     group: root
+#     mode: 0755
+#   when: validation.rc == 0
+#   notify: restart ssh
+
+- name: Ensure sudo group is present
+  group:
+    name: sudo
+    state: present
+
+- name: Ensure sudo group has sudo privileges
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: "^%sudo"
+    line: "%sudo ALL=(ALL:ALL) ALL"
+    validate: "/usr/sbin/visudo -cf %s"
+
+- name: Create users
+  user:
+    name: "{{ item.name }}"
+    password: "{{ item.password | default(None) }}"
+    groups: sudo
+    state: present
+    shell: /bin/bash
+  with_items: "{{ users }}"
+
+- name: Add authorized key
+  authorized_key:
+    user: "{{ item.name }}"
+    state: present
+    key: "{{ lookup('file', item.public_key) }}"
+    path: "{{ keys_file | regex_replace('%h', '/home/' + item.name) }}"
+    manage_dir: false
+  with_items: "{{ users }}"
+
+- name: Add NOPASSWD users
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%{{ item.name }}'
+    line: '%{{ item.name }} ALL=(ALL) NOPASSWD: ALL'
+    validate: "/usr/sbin/visudo -cf %s"
+  with_items: "{{ users }}"
+  when:
+    - item.sudoers == true

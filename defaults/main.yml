@@ -1,0 +1,26 @@
+# SSH Port number using for internal services configuration
+# (Ex.: firewall, sshd)
+ssh_port: 22
+
+# SSHD will try to find user's public key in this file
+# (Ex.: %h/.ssh/authorized_keys)
+keys_file: "%h/.ssh/authorized_keys"
+
+# SSHD LogLevel
+# Gives the verbosity level that is used when logging messages from
+# sshd(8). The possible values are: SILENT, QUIET, FATAL, ERROR,
+# INFO, VERBOSE, DEBUG, DEBUG1, DEBUG2, and DEBUG3. The default is
+# INFO. DEBUG and DEBUG1 are equivalent. DEBUG2 and DEBUG3 each
+# specify higher levels of debugging output. Logging with a DEBUG
+# level violates the privacy of users and is not recommended.
+#
+# Allowed values: SILENT|QUIET|FATAL|ERROR|INFO|VERBOSE|DEBUG|DEBUG1|DEBUG2|DEBUG3
+log_level: VERBOSE
+
+# List of user who have access to machines
+# Automatically added to sudo group
+#
+# sudoers param allow user use sudo without password promt
+# password param allow set user password
+users:
+  - { name: ansible, sudoers: true, public_key: ~/.ssh/id_rsa.pub }
