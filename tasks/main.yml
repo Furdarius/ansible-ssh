@@ -79,4 +79,4 @@
     validate: "/usr/sbin/visudo -cf %s"
   with_items: "{{ users }}"
   when:
-    - item.sudoers == true
+    - item.sudo_no_pass == true

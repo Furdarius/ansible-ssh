@@ -20,7 +20,7 @@ log_level: VERBOSE
 # List of user who have access to machines
 # Automatically added to sudo group
 #
-# sudoers param allow user use sudo without password promt
+# sudo_no_pass param allow user use sudo without password promt
 # password param allow set user password
 users:
-  - { name: ansible, sudoers: true, public_key: ~/.ssh/id_rsa.pub }
+  - { name: ansible, sudo_no_pass: true, public_key: ~/.ssh/id_rsa.pub }
